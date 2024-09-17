@@ -1,0 +1,15 @@
+* {
+    box-sizing: border-box;
+}
+
+.main{
+    padding: 16px;
+}
+
+p::first-letter{
+    font-size: 150%;
+}
+
+p{
+    line-height: 1.6;
+}

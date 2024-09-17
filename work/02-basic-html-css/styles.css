@@ -1,0 +1,22 @@
+* {
+    box-sizing: border-box;
+}
+
+.header {
+    background-color: plum;
+
+    display: flex;
+}
+
+.main {
+    background-color: pink;
+}
+
+
+
+.footer {
+    grid-area: footer;
+    padding: 10px;
+
+    background-color: plum;
+}
