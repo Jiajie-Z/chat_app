@@ -1,0 +1,12 @@
+* {
+    box-sizing: border-box;
+}
+
+.main{
+    padding:16px;
+    border: 1px black solid;
+}
+
+.list{
+    list-style-type: "\1f431";
+}
