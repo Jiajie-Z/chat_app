@@ -15,8 +15,8 @@ const messages = [ // Notice: An array of objects
 ];
 
 // Below uses destrucuring
-function addMessage({ sender, text }) { // Leave this as `sender` - I want to see you solve the name disagreement
-  // Fill in!
+function addMessage({ sender, text }) { 
+  chat.messages.push({sender, text});
 }
 
 const chat = {

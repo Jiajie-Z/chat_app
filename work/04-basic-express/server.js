@@ -5,7 +5,7 @@ const PORT = 3000;
 const chat = require('./chat'); // "chat" holds all the non-web logic for managing users/messages
 const chatWeb = require('./chat-web'); // "chat-web" holds the templates for the generated HTML
 
-app.use(express.static('./public'));
+app.use(express.static('./public')); 
 
 app.get('/', (req, res) => {
   res.send(chatWeb.chatPage(chat));
@@ -14,8 +14,13 @@ app.get('/', (req, res) => {
 
 // Below includes an example of pulling fields from a POST request body
 app.post('/chat', express.urlencoded({ extended: false }), (req, res) => {
-  const { text } = req.body; // You'll need to add something!
+  const { text, username } = req.body; // You'll need to add something!
   // Fill in here - Do not return HTML, just update server data
+  console.log("Text:", text, "Username:", username); //this line for debugging
+  if (!chat.users[username]){
+    chat.users[username] = username;
+  }
+  chat.addMessage({sender:username, text});
   res.redirect('/'); // Redirect to the home page
 });
 
