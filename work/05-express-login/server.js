@@ -51,7 +51,7 @@ app.post('/change-word', (req, res) => {
     const session = sessions[sid];
   
     if (!session) {
-      return res.status(403).send('You must be logged in to change your word.');
+      return res.redirect('/login');
     }
   
     const username = session.username;
