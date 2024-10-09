@@ -31,11 +31,11 @@ app.post('/login', (req, res) => {
   const username = req.body.username.trim();
 
   if (!username || !validateUsername(username)) {
-    return res.status(400).send(generateLoginPage('Invalid username. <a href="/">Try again</a>'));
+    return res.status(400).send(generateLoginPage('<p>Invalid username.</p> <a href="/">Try again</a>'));
   }
                                    
   if (username === 'dog') {
-    return res.status(403).send(generateLoginPage('Username "dog" is not allowed. <a href="/">Try again</a>'));
+    return res.status(403).send(generateLoginPage('<p>Username "dog" is not allowed.</p> <a href="/">Try again</a>'));
   }
 
   const sid = generateSessionId();
@@ -51,7 +51,8 @@ app.post('/change-word', (req, res) => {
     const session = sessions[sid];
   
     if (!session) {
-      return res.redirect('/login');
+      return res.status(403).send(generateLoginPage('<p>Can not change word without a valid username</p> <a href="/">Try again</a>'));
+    
     }
   
     const username = session.username;
