@@ -14,7 +14,7 @@ state still stood story study table teach
 their there these thing think those three
 under until usual voice vowel watch water
 wheel where which while white whole world
-would write young
+would write young zebra
 `.split(/[\s\n]+/).filter( item => !!item );
 
 module.exports = words;
