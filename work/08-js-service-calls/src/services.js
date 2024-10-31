@@ -36,3 +36,52 @@ export function fetchLogin(username) {
 
 
 
+export function fetchLogout() {
+  return fetch('/api/session', {
+    method: 'DELETE',
+  })
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then(response => {
+      if (!response.ok) {
+        return Promise.reject({ error: 'logout-failed' });
+      }
+      return response.json();
+    });
+}
+
+export function fetchSession() {
+  return fetch('/api/session', { method: 'GET' })
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then(response => {
+      if (!response.ok) {
+        return Promise.reject({ error: 'auth-missing' });
+      }
+      return response.json();
+    });
+}
+
+export function fetchStoredWord() {
+  return fetch('/api/word', { method: 'GET' })
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => Promise.reject(err));
+      }
+      return response.json();
+    });
+}
+
+export function updateStoredWord(word) {
+  return fetch('/api/word', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ word }),
+  })
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => Promise.reject(err));
+      }
+      return response.json();
+    });
+}
