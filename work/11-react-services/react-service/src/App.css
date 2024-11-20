@@ -1,0 +1,122 @@
+.app {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.main {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+
+
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login__username {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.login__button {
+  padding: 10px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.login__button:hover {
+  background-color: #0056b3;
+}
+
+.login__button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+
+.controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.controls__logout {
+  padding: 10px 15px;
+  background-color: #FF4D4D;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.controls__logout:hover {
+  background-color: #cc0000;
+}
+
+
+.word {
+  margin: 15px 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+}
+
+.add-word-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-word-form input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.add-word-form button {
+  padding: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.add-word-form button:hover {
+  background-color: #218838;
+}
+
+.status {
+  margin-bottom: 20px;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+}
