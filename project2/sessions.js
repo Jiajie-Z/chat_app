@@ -1,30 +1,57 @@
-const sessions = {};
+const crypto = require('crypto');
+const db = require('./db');
 
 function generateSessionId(username) {
-  const timestamp = Date.now();
-  const randomNum = Math.floor(Math.random() * 1000); // Adds a small random element
-  return `session-${timestamp}-${randomNum}-${username}`;
+  return `session-${crypto.randomUUID()}-${username}`;
 }
 
-function addSession(username) {
-    const sid = generateSessionId();
-    sessions[sid] = {
-        username,
-    };
-    return sid;
+async function addSession(username) {
+  const sid = generateSessionId(username);
+
+  await db.execute(
+    'INSERT INTO sessions (sid, username) VALUES (?, ?)',
+    [sid, username]
+  );
+
+  return sid;
 }
 
-function getSessionUser(sid) {
-    return sessions[sid]?.username;
+async function getSessionUser(sid) {
+  const [rows] = await db.execute(
+    'SELECT username FROM sessions WHERE sid = ?',
+    [sid]
+  );
+
+  if (!rows.length) {
+    return '';
+  }
+
+  return rows[0].username;
 }
 
-function deleteSession(sid) {
-    delete sessions[sid];
+async function deleteSession(sid) {
+  await db.execute(
+    'DELETE FROM sessions WHERE sid = ?',
+    [sid]
+  );
 }
 
+async function getLoggedInUsers() {
+  const [rows] = await db.execute(
+    'SELECT DISTINCT username FROM sessions ORDER BY username'
+  );
+
+  const users = {};
+  rows.forEach(({ username }) => {
+    users[username] = username;
+  });
+
+  return users;
+}
 
 module.exports = {
-    addSession,
-    deleteSession,
-    getSessionUser
+  addSession,
+  deleteSession,
+  getSessionUser,
+  getLoggedInUsers,
 };

@@ -1,35 +1,42 @@
-"use strict";
-
-const users = {};
-
-const messages = [];
+const db = require('./db');
 
 function isValidUsername(username) {
-    let isValid = true;
-    isValid = isValid && username.trim().length <= 20;
-    isValid = isValid && username.match(/^[A-Za-z0-9_]+$/);
-    return isValid;
+  if (!username || typeof username !== 'string') {
+    return false;
+  }
+
+  let isValid = true;
+  isValid = isValid && username.trim().length > 0;
+  isValid = isValid && username.trim().length <= 20;
+  isValid = isValid && /^[A-Za-z0-9_]+$/.test(username);
+  return isValid;
 }
 
-function addMessage({ sender, text }) {
-    messages.push({sender, text});
+async function ensureUser(username) {
+  await db.execute(
+    'INSERT IGNORE INTO users (username) VALUES (?)',
+    [username]
+  );
 }
 
-function addUser(username) {
-    if (isValidUsername(username)) {
-        users[username] = username;
-    }
+async function addMessage({ sender, text }) {
+  await db.execute(
+    'INSERT INTO messages (sender, text) VALUES (?, ?)',
+    [sender, text]
+  );
 }
 
-function deleteUser(username) {
-    delete users[username];
+async function getMessages() {
+  const [rows] = await db.execute(
+    'SELECT sender, text, created_at FROM messages ORDER BY id ASC'
+  );
+
+  return rows;
 }
 
 module.exports = {
-    users,
-    messages,
-    isValidUsername,
-    addUser,
-    deleteUser,
-    addMessage,
+  isValidUsername,
+  ensureUser,
+  addMessage,
+  getMessages,
 };

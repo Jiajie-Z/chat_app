@@ -1,120 +1,130 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const sessions = require('./sessions');
 const chats = require('./chats');
 
-
 app.use(cookieParser());
 app.use(express.static('./public'));
-app.use(express.json()); 
+app.use(express.json());
 
+app.get('/api/session', async (req, res) => {
+  const sid = req.cookies.sid;
+  const username = sid ? await sessions.getSessionUser(sid) : '';
 
+  if (!sid || !username) {
+    res.status(401).json({ error: 'auth-missing' });
+    return;
+  }
 
-app.get('/api/session', (req, res) => {
-    const sid = req.cookies.sid;
-    const username = sid ? sessions.getSessionUser(sid) : '';
-    if(!sid || !username) {
-        res.status(401).json({ error: 'auth-missing' });
-        return;
-    }
-    res.json({ username });
+  res.json({ username });
 });
 
+app.post('/api/session', async (req, res) => {
+  const { username } = req.body;
 
-app.post('/api/session', (req, res) => {
-    const { username } = req.body;
+  if (!chats.isValidUsername(username)) {
+    res.status(400).json({ error: 'required-username' });
+    return;
+  }
 
-    if(!chats.isValidUsername(username)) {
-        res.status(400).json({ error: 'required-username' });
-        return;
-    }
+  if (username === 'dog') {
+    res.status(403).json({ error: 'auth-insufficient' });
+    return;
+  }
 
-    if(username === 'dog') {
-        res.status(403).json({ error: 'auth-insufficient' });
-        return;
-    }
-
-    const sid = sessions.addSession(username);
-    chats.addUser(username);
+  try {
+    await chats.ensureUser(username);
+    const sid = await sessions.addSession(username);
 
     res.cookie('sid', sid);
-
     res.json({ username });
+  } catch (err) {
+    res.status(500).json({ error: 'server-error' });
+  }
 });
 
+app.delete('/api/session', async (req, res) => {
+  const sid = req.cookies.sid;
+  const username = sid ? await sessions.getSessionUser(sid) : '';
 
-app.delete('/api/session', (req, res) => {
-    const sid = req.cookies.sid;
-    const username = sid ? sessions.getSessionUser(sid) : '';
+  if (sid) {
+    res.clearCookie('sid');
+  }
 
-    if(sid) {
-        res.clearCookie('sid');
-    }
+  if (username) {
+    await sessions.deleteSession(sid);
+  }
 
-    if(username) {
-       
-        sessions.deleteSession(sid);
-
-    }
-
-    res.json({ wasLoggedIn: !!username }); 
+  res.json({ wasLoggedIn: !!username });
 });
 
+app.get('/api/messages', async (req, res) => {
+  const sid = req.cookies.sid;
+  const username = sid ? await sessions.getSessionUser(sid) : '';
 
-app.get('/api/messages', (req, res) => {
-    const sid = req.cookies.sid;
-    const username = sid ? sessions.getSessionUser(sid) : '';
+  if (!sid || !username) {
+    res.status(401).json({ error: 'auth-missing' });
+    return;
+  }
 
-    if(!sid || !username) {
-        res.status(401).json({ error: 'auth-missing' });
-        return;
-    }
-
-    const messagesList = chats.messages;
-
+  try {
+    const messagesList = await chats.getMessages();
     res.json({ username, messagesList });
+  } catch (err) {
+    res.status(500).json({ error: 'server-error' });
+  }
 });
 
+app.post('/api/messages', async (req, res) => {
+  const sid = req.cookies.sid;
+  const username = sid ? await sessions.getSessionUser(sid) : '';
 
+  if (!sid || !username) {
+    res.status(401).json({ error: 'auth-missing' });
+    return;
+  }
 
-app.post('/api/messages', (req, res) => {
-    const sid = req.cookies.sid;
-    const username = sid ? sessions.getSessionUser(sid) : '';
+  const { message } = req.body;
 
-    if(!sid || !username) {
-        res.status(401).json({ error: 'auth-missing' });
-        return;
-    }
+  if (!message || !message.trim()) {
+    res.status(400).json({ error: 'required-message' });
+    return;
+  }
 
-    const { message } = req.body;
+  try {
+    await chats.addMessage({
+      sender: username,
+      text: message.trim(),
+    });
 
-    if(!message) {
-        res.status(400).json({ error: 'required-message' });
-        return;
-    }
-
-    chats.addMessage({ sender:username, text:message });
-
-    res.json({ username, sentMessage: message });
+    res.json({ username, sentMessage: message.trim() });
+  } catch (err) {
+    res.status(500).json({ error: 'server-error' });
+  }
 });
 
-app.get('/api/users', (req, res) => {
-    const sid = req.cookies.sid;
-    const username = sid ? sessions.getSessionUser(sid) : '';
+app.get('/api/users', async (req, res) => {
+  const sid = req.cookies.sid;
+  const username = sid ? await sessions.getSessionUser(sid) : '';
 
-    if(!sid || !username) {
-        res.status(401).json({ error: 'auth-missing' });
-        return;
-    }
+  if (!sid || !username) {
+    res.status(401).json({ error: 'auth-missing' });
+    return;
+  }
 
-    const usersList = chats.users;
-
+  try {
+    const usersList = await sessions.getLoggedInUsers();
     res.json({ username, usersList });
-})
+  } catch (err) {
+    res.status(500).json({ error: 'server-error' });
+  }
+});
 
-
-app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`http://localhost:${PORT}`);
+});
