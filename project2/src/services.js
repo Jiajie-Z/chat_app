@@ -1,4 +1,49 @@
-import * as views from "./views";
+import { io } from 'socket.io-client';
+import * as views from './views';
+
+let socket;
+
+export function connectSocket(username, onMessagesUpdated, onUsersUpdated, onError) {
+  if (socket) {
+    socket.disconnect();
+  }
+
+  socket = io();
+
+  socket.on('connect', () => {
+    socket.emit('join-chat', { username });
+  });
+
+  socket.on('messages-updated', (messagesList) => {
+    onMessagesUpdated(messagesList);
+  });
+
+  socket.on('users-updated', (usersList) => {
+    onUsersUpdated(usersList);
+  });
+
+  socket.on('chat-error', (err) => {
+    onError(err);
+  });
+
+  return socket;
+}
+
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
+export function sendSocketMessage(username, text) {
+  if (!socket) {
+    return Promise.reject({ error: 'network-error' });
+  }
+
+  socket.emit('send-message', { username, text });
+  return Promise.resolve();
+}
 
 export function fetchRegister(username, password) {
   return fetch('/api/auth/register', {
