@@ -258,3 +258,29 @@ body {
     transform: rotate(360deg);
   }
 }
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 在线状态小圆点 */
+.user__status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #28a745; /* 绿色 */
+}
+
+/* 当前用户高亮 */
+.user--self {
+  font-weight: 700;
+  color: #007bff;
+}
+
+/* (You) 标识 */
+.user__you {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
