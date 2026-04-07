@@ -24,24 +24,67 @@ app.get('/api/session', async (req, res) => {
   res.json({ username });
 });
 
-app.post('/api/session', async (req, res) => {
-  const { username } = req.body;
+app.post('/api/auth/register', async (req, res) => {
+  const { username, password } = req.body;
 
   if (!chats.isValidUsername(username)) {
-    res.status(400).json({ error: 'required-username' });
+    res.status(400).json({ error: 'invalid-username' });
     return;
   }
 
-  if (username === 'dog') {
-    res.status(403).json({ error: 'auth-insufficient' });
+  if (!chats.isValidPassword(password)) {
+    res.status(400).json({ error: 'invalid-password' });
     return;
   }
 
   try {
-    await chats.ensureUser(username);
-    const sid = await sessions.addSession(username);
+    const existingUser = await chats.getUserByUsername(username);
 
-    res.cookie('sid', sid);
+    if (existingUser) {
+      res.status(409).json({ error: 'username-exists' });
+      return;
+    }
+
+    await chats.createUser(username, password);
+
+    const sid = await sessions.addSession(username);
+    res.cookie('sid', sid, { httpOnly: true });
+
+    res.status(201).json({ username });
+  } catch (err) {
+    res.status(500).json({ error: 'server-error' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!chats.isValidUsername(username)) {
+    res.status(400).json({ error: 'invalid-username' });
+    return;
+  }
+
+  if (!chats.isValidPassword(password)) {
+    res.status(400).json({ error: 'invalid-password' });
+    return;
+  }
+
+  try {
+    const loginResult = await chats.verifyLogin(username, password);
+
+    if (!loginResult.ok) {
+      if (loginResult.error === 'user-not-found') {
+        res.status(404).json({ error: 'user-not-found' });
+        return;
+      }
+
+      res.status(401).json({ error: 'invalid-credentials' });
+      return;
+    }
+
+    const sid = await sessions.addSession(username);
+    res.cookie('sid', sid, { httpOnly: true });
+
     res.json({ username });
   } catch (err) {
     res.status(500).json({ error: 'server-error' });
