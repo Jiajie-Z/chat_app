@@ -1,4 +1,4 @@
-const db = require('./db');
+const { getPool } = require('./db');
 const bcrypt = require('bcrypt');
 
 function isValidUsername(username) {
@@ -21,7 +21,9 @@ function isValidPassword(password) {
 }
 
 async function getUserByUsername(username) {
-  const [rows] = await db.execute(
+  const pool = await getPool();
+
+  const [rows] = await pool.execute(
     'SELECT id, username, password_hash, created_at FROM users WHERE username = ?',
     [username]
   );
@@ -30,9 +32,10 @@ async function getUserByUsername(username) {
 }
 
 async function createUser(username, password) {
+  const pool = await getPool();
   const passwordHash = await bcrypt.hash(password, 10);
 
-  await db.execute(
+  await pool.execute(
     'INSERT INTO users (username, password_hash) VALUES (?, ?)',
     [username, passwordHash]
   );
@@ -55,14 +58,18 @@ async function verifyLogin(username, password) {
 }
 
 async function addMessage({ sender, text }) {
-  await db.execute(
+  const pool = await getPool();
+
+  await pool.execute(
     'INSERT INTO messages (sender, text) VALUES (?, ?)',
     [sender, text]
   );
 }
 
 async function getMessages() {
-  const [rows] = await db.execute(
+  const pool = await getPool();
+
+  const [rows] = await pool.execute(
     'SELECT sender, text, created_at FROM messages ORDER BY id ASC'
   );
 

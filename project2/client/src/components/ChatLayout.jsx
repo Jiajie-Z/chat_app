@@ -25,7 +25,7 @@ export default function ChatLayout({
 
       <div id="main">
         <div id="users">
-          <UserList users={users} />
+          <UserList users={users} currentUser={username} />
         </div>
 
         <div id="messages">

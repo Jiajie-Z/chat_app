@@ -111,6 +111,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ username });
   } catch (err) {
+    console.error('REGISTER ERROR:', err);
     res.status(500).json({ error: 'server-error' });
   }
 });
@@ -146,6 +147,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     res.json({ username });
   } catch (err) {
+    console.error('LOGIN ERROR:', err);
     res.status(500).json({ error: 'server-error' });
   }
 });
@@ -179,6 +181,7 @@ app.get('/api/messages', async (req, res) => {
     const messagesList = await chats.getMessages();
     res.json({ username, messagesList });
   } catch (err) {
+    console.error('MESSAGES ERROR:', err);
     res.status(500).json({ error: 'server-error' });
   }
 });
@@ -196,6 +199,7 @@ app.get('/api/users', async (req, res) => {
     const usersList = await sessions.getLoggedInUsers();
     res.json({ username, usersList });
   } catch (err) {
+    console.error('USERS ERROR:', err);
     res.status(500).json({ error: 'server-error' });
   }
 });

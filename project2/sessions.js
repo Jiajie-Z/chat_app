@@ -1,14 +1,15 @@
 const crypto = require('crypto');
-const db = require('./db');
+const { getPool } = require('./db');
 
 function generateSessionId(username) {
   return `session-${crypto.randomUUID()}-${username}`;
 }
 
 async function addSession(username) {
+  const pool = await getPool();
   const sid = generateSessionId(username);
 
-  await db.execute(
+  await pool.execute(
     'INSERT INTO sessions (sid, username) VALUES (?, ?)',
     [sid, username]
   );
@@ -17,7 +18,9 @@ async function addSession(username) {
 }
 
 async function getSessionUser(sid) {
-  const [rows] = await db.execute(
+  const pool = await getPool();
+
+  const [rows] = await pool.execute(
     'SELECT username FROM sessions WHERE sid = ?',
     [sid]
   );
@@ -30,14 +33,18 @@ async function getSessionUser(sid) {
 }
 
 async function deleteSession(sid) {
-  await db.execute(
+  const pool = await getPool();
+
+  await pool.execute(
     'DELETE FROM sessions WHERE sid = ?',
     [sid]
   );
 }
 
 async function getLoggedInUsers() {
-  const [rows] = await db.execute(
+  const pool = await getPool();
+
+  const [rows] = await pool.execute(
     'SELECT DISTINCT username FROM sessions ORDER BY username'
   );
 
