@@ -5,7 +5,9 @@ import {
   fetchSession,
   fetchUsers,
   fetchMessages,
-  fetchOutgoingMessage,
+  connectSocket,
+  disconnectSocket,
+  sendSocketMessage,
 } from './services';
 import * as views from './views';
 
@@ -42,6 +44,7 @@ function render() {
 
 function handleError(err, fallbackMessage = 'Something went wrong.') {
   if (err && err.error === 'auth-missing') {
+    disconnectSocket();
     resetstate();
     render();
     return;
@@ -68,59 +71,32 @@ function handleError(err, fallbackMessage = 'Something went wrong.') {
   render();
 }
 
-function refreshMessages() {
-  return fetchMessages().then((response) => {
-    const nextMessages = response.messagesList || [];
-    const hasChanged =
-      JSON.stringify(state.messagesList) !== JSON.stringify(nextMessages);
-
-    state.messagesList = nextMessages;
-    return hasChanged ? 'update' : '';
-  });
+function initializeSocket() {
+  connectSocket(
+    state.username,
+    (messagesList) => {
+      state.messagesList = messagesList || [];
+      views.messages(state.messagesList);
+    },
+    (usersList) => {
+      state.usersList = usersList || {};
+      views.users(state.usersList);
+    },
+    (err) => {
+      handleError(err, 'Socket error.');
+    }
+  );
 }
 
-function refreshUsers() {
-  return fetchUsers().then((response) => {
-    const nextUsers = response.usersList || {};
-    const hasChanged =
-      JSON.stringify(state.usersList) !== JSON.stringify(nextUsers);
-
-    state.usersList = nextUsers;
-    return hasChanged ? 'update' : '';
-  });
-}
-
-function renderMessages() {
-  refreshMessages()
-    .then((status) => {
-      if (status === 'update') {
-        views.messages(state.messagesList);
-      }
-    })
-    .catch((err) => {
-      handleError(err, 'Failed to refresh messages.');
-    });
-}
-
-function renderUsers() {
-  refreshUsers()
-    .then((status) => {
-      if (status === 'update') {
-        views.users(state.usersList);
-      }
-    })
-    .catch((err) => {
-      handleError(err, 'Failed to refresh users.');
-    });
-}
-
-function reRender() {
-  if (state.username) {
-    renderMessages();
-    renderUsers();
-  }
-
-  setTimeout(reRender, 5000);
+function loadInitialChatData() {
+  return Promise.all([
+    fetchMessages().then((response) => {
+      state.messagesList = response.messagesList || [];
+    }),
+    fetchUsers().then((response) => {
+      state.usersList = response.usersList || {};
+    }),
+  ]);
 }
 
 function begin() {
@@ -130,12 +106,15 @@ function begin() {
         state.username = response.username;
         state.isLoggedIn = true;
         state.errorMessage = '';
-        return Promise.all([refreshMessages(), refreshUsers()]);
+        return loadInitialChatData();
       }
       return Promise.resolve();
     })
     .then(() => {
       render();
+      if (state.username) {
+        initializeSocket();
+      }
     })
     .catch((err) => {
       if (err && err.error === 'auth-missing') {
@@ -149,7 +128,6 @@ function begin() {
 }
 
 begin();
-reRender();
 
 const appEl = document.querySelector('#chat-app');
 
@@ -166,10 +144,11 @@ appEl.addEventListener('click', (e) => {
         state.isLoggedIn = true;
         state.errorMessage = '';
         state.authMode = 'login';
-        return Promise.all([refreshMessages(), refreshUsers()]);
+        return loadInitialChatData();
       })
       .then(() => {
         render();
+        initializeSocket();
       })
       .catch((err) => {
         handleError(err, 'Login failed. Please try again.');
@@ -190,10 +169,11 @@ appEl.addEventListener('click', (e) => {
         state.isLoggedIn = true;
         state.errorMessage = '';
         state.authMode = 'login';
-        return Promise.all([refreshMessages(), refreshUsers()]);
+        return loadInitialChatData();
       })
       .then(() => {
         render();
+        initializeSocket();
       })
       .catch((err) => {
         handleError(err, 'Registration failed. Please try again.');
@@ -229,20 +209,9 @@ appEl.addEventListener('click', (e) => {
       return;
     }
 
-    fetchOutgoingMessage(newMessage)
-      .then((response) => {
-        if (response.username !== state.username) {
-          resetstate();
-          render();
-          return Promise.reject({ error: 'auth-missing' });
-        }
-
-        messageInputEl.value = '';
-        return Promise.all([refreshMessages(), refreshUsers()]);
-      })
+    sendSocketMessage(state.username, newMessage)
       .then(() => {
-        views.messages(state.messagesList);
-        views.users(state.usersList);
+        messageInputEl.value = '';
       })
       .catch((err) => {
         handleError(err, 'Failed to send message.');
@@ -256,6 +225,7 @@ appEl.addEventListener('click', (e) => {
 
     fetchLogout()
       .then(() => {
+        disconnectSocket();
         resetstate();
         render();
       })

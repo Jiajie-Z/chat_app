@@ -1,5 +1,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
@@ -11,6 +13,63 @@ const chats = require('./chats');
 app.use(cookieParser());
 app.use(express.static('./public'));
 app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+const onlineSockets = new Map();
+
+async function broadcastUsers() {
+  try {
+    const usersList = await sessions.getLoggedInUsers();
+    io.emit('users-updated', usersList);
+  } catch (err) {
+    console.error('Failed to broadcast users:', err);
+  }
+}
+
+async function broadcastMessages() {
+  try {
+    const messagesList = await chats.getMessages();
+    io.emit('messages-updated', messagesList);
+  } catch (err) {
+    console.error('Failed to broadcast messages:', err);
+  }
+}
+
+io.on('connection', (socket) => {
+  socket.on('join-chat', async ({ username }) => {
+    if (!username) {
+      return;
+    }
+
+    onlineSockets.set(socket.id, username);
+    await broadcastUsers();
+  });
+
+  socket.on('send-message', async ({ username, text }) => {
+    try {
+      if (!username || !text || !text.trim()) {
+        socket.emit('chat-error', { error: 'required-message' });
+        return;
+      }
+
+      await chats.addMessage({
+        sender: username,
+        text: text.trim(),
+      });
+
+      await broadcastMessages();
+    } catch (err) {
+      socket.emit('chat-error', { error: 'server-error' });
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    onlineSockets.delete(socket.id);
+    await broadcastUsers();
+  });
+});
 
 app.get('/api/session', async (req, res) => {
   const sid = req.cookies.sid;
@@ -103,6 +162,7 @@ app.delete('/api/session', async (req, res) => {
     await sessions.deleteSession(sid);
   }
 
+  await broadcastUsers();
   res.json({ wasLoggedIn: !!username });
 });
 
@@ -118,34 +178,6 @@ app.get('/api/messages', async (req, res) => {
   try {
     const messagesList = await chats.getMessages();
     res.json({ username, messagesList });
-  } catch (err) {
-    res.status(500).json({ error: 'server-error' });
-  }
-});
-
-app.post('/api/messages', async (req, res) => {
-  const sid = req.cookies.sid;
-  const username = sid ? await sessions.getSessionUser(sid) : '';
-
-  if (!sid || !username) {
-    res.status(401).json({ error: 'auth-missing' });
-    return;
-  }
-
-  const { message } = req.body;
-
-  if (!message || !message.trim()) {
-    res.status(400).json({ error: 'required-message' });
-    return;
-  }
-
-  try {
-    await chats.addMessage({
-      sender: username,
-      text: message.trim(),
-    });
-
-    res.json({ username, sentMessage: message.trim() });
   } catch (err) {
     res.status(500).json({ error: 'server-error' });
   }
@@ -168,6 +200,6 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
 });
