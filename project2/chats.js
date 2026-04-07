@@ -1,22 +1,57 @@
 const db = require('./db');
+const bcrypt = require('bcrypt');
 
 function isValidUsername(username) {
   if (!username || typeof username !== 'string') {
     return false;
   }
 
-  let isValid = true;
-  isValid = isValid && username.trim().length > 0;
-  isValid = isValid && username.trim().length <= 20;
-  isValid = isValid && /^[A-Za-z0-9_]+$/.test(username);
-  return isValid;
+  const trimmed = username.trim();
+
+  return !!trimmed
+    && trimmed.length <= 20
+    && /^[A-Za-z0-9_]+$/.test(trimmed);
 }
 
-async function ensureUser(username) {
-  await db.execute(
-    'INSERT IGNORE INTO users (username) VALUES (?)',
+function isValidPassword(password) {
+  return !!password
+    && typeof password === 'string'
+    && password.length >= 6
+    && password.length <= 100;
+}
+
+async function getUserByUsername(username) {
+  const [rows] = await db.execute(
+    'SELECT id, username, password_hash, created_at FROM users WHERE username = ?',
     [username]
   );
+
+  return rows[0] || null;
+}
+
+async function createUser(username, password) {
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await db.execute(
+    'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+    [username, passwordHash]
+  );
+}
+
+async function verifyLogin(username, password) {
+  const user = await getUserByUsername(username);
+
+  if (!user) {
+    return { ok: false, error: 'user-not-found' };
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password_hash);
+
+  if (!isMatch) {
+    return { ok: false, error: 'invalid-credentials' };
+  }
+
+  return { ok: true };
 }
 
 async function addMessage({ sender, text }) {
@@ -36,7 +71,10 @@ async function getMessages() {
 
 module.exports = {
   isValidUsername,
-  ensureUser,
+  isValidPassword,
+  getUserByUsername,
+  createUser,
+  verifyLogin,
   addMessage,
   getMessages,
 };

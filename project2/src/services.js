@@ -1,28 +1,38 @@
 import * as views from "./views";
 
-export function fetchLogin(username) {
-  views.showLoadingIndicator();  // Show loading indicator before starting the fetch request
-  
-  return fetch('/api/session/', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username }),
+export function fetchRegister(username, password) {
+  return fetch('/api/auth/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
   })
-  .catch(err => {
-      views.hideLoadingIndicator();  // Hide loading indicator on network error
-      return Promise.reject({ error: 'network-error' });
-  })
-  .then(response => {
-      views.hideLoadingIndicator();  // Hide loading indicator when response is received
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then((response) => {
       if (!response.ok) {
-          return response.json().then(err => Promise.reject(err));
+        return response.json().then((err) => Promise.reject(err));
       }
       return response.json();
-  });
+    });
 }
 
+export function fetchLogin(username, password) {
+  return fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  })
+    .catch(() => Promise.reject({ error: 'network-error' }))
+    .then((response) => {
+      if (!response.ok) {
+        return response.json().then((err) => Promise.reject(err));
+      }
+      return response.json();
+    });
+}
   
   
   
