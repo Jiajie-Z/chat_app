@@ -11,7 +11,7 @@ const sessions = require('./sessions');
 const chats = require('./chats');
 
 app.use(cookieParser());
-app.use(express.static('./public'));
+//app.use(express.static('./public'));
 app.use(express.json());
 
 const server = http.createServer(app);
